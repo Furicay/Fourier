@@ -1,0 +1,64 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+def FFT(x):
+    N = len(x)
+    if N == 1:
+        return x
+    else:
+        X_even = FFT(x[::2])
+        X_odd = FFT(x[1::2])
+        factor = np.exp(-2j * np.pi * np.arange(N) / N)
+        X = np.concatenate([X_even + factor[:int(N / 2)] * X_odd, X_even + factor[int(N / 2):] * X_odd])
+        return X
+def load_csv(filename):
+    df = pd.read_csv(filename, encoding='ISO-8859-1')
+    tempos = df.iloc[-1:, 0].values.astype(float)
+    tempos = tempos[0]
+    leituras = df.iloc[0:, 1].values.astype(float)
+    return tempos, leituras
+
+
+sr = 4096
+t1, x = load_csv(r'C:/Users/gabri/OneDrive/Área de Trabalho/valores frequência/dados_0005.csv')
+ts = t1 / sr
+t = np.arange(0, t1, ts)
+
+plt.figure(figsize=(8, 6))
+plt.plot(t, x, 'r')
+plt.ylabel('Amplitude')
+
+plt.show()
+
+X=FFT(x)
+
+N = len(X)
+n = np.arange(N)
+T = N/sr
+freq = n/T
+
+plt.figure(figsize = (12, 6))
+plt.subplot(121)
+plt.stem(freq[1:], abs(X[1:]), 'b', markerfmt=" ", basefmt="-b")
+plt.xlabel('Freq (Hz)')
+plt.ylabel('FFT Amplitude |X(freq)|')
+
+n_oneside = N//2
+f_oneside = freq[:n_oneside]
+X_oneside =X[:n_oneside]/n_oneside
+
+plt.subplot(122)
+plt.stem(f_oneside[1:], abs(X_oneside[1:]), 'b', markerfmt=" ", basefmt="-b")
+plt.xlabel('Freq (Hz)')
+plt.ylabel('Normalized FFT Amplitude |X(freq)|')
+plt.tight_layout()
+plt.show()
+
+peak_idx = np.argmax(abs(X[1:]))
+f_doppler = f_oneside[peak_idx]
+
+velocity = (f_doppler * 3e8) / (2 * 10.525)
+
+print(f"Frequência Doppler: {f_doppler} Hz")
+print(f"Velocidade calculada: {velocity} m/s")
